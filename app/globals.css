@@ -1,0 +1,213 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+   IT3A - TRACK design tokens
+   Palette: #FFFFFF canvas, #41EAD4 accent, #001514 ink.
+   Dark mode derives from the same three colours; the accent is identical in
+   both modes and only the surrounding neutrals swap.
+--------------------------------------------------------------------------- */
+
+@theme inline {
+  --font-sans: var(--font-outfit), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --color-canvas: var(--c-canvas);
+  --color-surface: var(--c-surface);
+  --color-surface-2: var(--c-surface-2);
+  --color-ink: var(--c-ink);
+  --color-muted: var(--c-muted);
+  --color-line: var(--c-line);
+  --color-accent: var(--c-accent);
+  --color-accent-soft: var(--c-accent-soft);
+  --color-accent-ink: var(--c-accent-ink);
+  --color-inverse: var(--c-inverse);
+  --color-inverse-ink: var(--c-inverse-ink);
+  --color-danger: var(--c-danger);
+  --color-danger-ink: var(--c-danger-ink);
+  --color-danger-soft: var(--c-danger-soft);
+
+  --radius-control: 10px;
+  --radius-card: 16px;
+}
+
+@layer base {
+  :root {
+    color-scheme: light;
+
+    --c-canvas: #ffffff;
+    --c-surface: #f4f8f7;
+    --c-surface-2: #e8f0ee;
+    --c-ink: #001514;
+    --c-muted: #4b6461;
+    --c-line: #d9e5e2;
+    --c-accent: #41ead4;
+    --c-accent-soft: #d9fbf6;
+    --c-accent-ink: #0a6b62;
+    --c-inverse: #001514;
+    --c-inverse-ink: #ffffff;
+    --c-danger: #b42318;
+    --c-danger-ink: #b42318;
+    --c-danger-soft: #fdecea;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+
+      --c-canvas: #001514;
+      --c-surface: #062220;
+      --c-surface-2: #0a2e2a;
+      --c-ink: #ffffff;
+      --c-muted: #9db8b3;
+      --c-line: #123a35;
+      --c-accent: #41ead4;
+      --c-accent-soft: #0d3b36;
+      --c-accent-ink: #41ead4;
+      --c-inverse: #0b302c;
+      --c-inverse-ink: #ffffff;
+      --c-danger: #b42318;
+      --c-danger-ink: #ff9a90;
+      --c-danger-soft: #3a1512;
+    }
+  }
+
+  * {
+    border-color: var(--c-line);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--c-canvas);
+    color: var(--c-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background: var(--c-accent);
+    color: #001514;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--c-accent-ink);
+    outline-offset: 2px;
+  }
+
+  /* Numbers in the ledger read as data, not prose. */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Motion: entry reveals only. Everything collapses under reduced motion.
+--------------------------------------------------------------------------- */
+
+@keyframes it3a-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes it3a-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes it3a-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes it3a-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.rise {
+  animation: it3a-rise 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.fade {
+  animation: it3a-fade 320ms ease-out both;
+}
+
+.toast-in {
+  animation: it3a-toast-in 240ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--c-surface-2);
+}
+
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in oklab, var(--c-canvas) 70%, transparent),
+    transparent
+  );
+  animation: it3a-shimmer 1.6s ease-in-out infinite;
+}
+
+/* A single, quiet aqua wash behind the hero. Not a section-wide gradient. */
+.hero-glow {
+  background: radial-gradient(
+    58% 62% at 76% 4%,
+    rgba(65, 234, 212, 0.18),
+    rgba(65, 234, 212, 0) 70%
+  );
+}
+
+@media (prefers-color-scheme: dark) {
+  .hero-glow {
+    background: radial-gradient(
+      58% 62% at 76% 4%,
+      rgba(65, 234, 212, 0.14),
+      rgba(65, 234, 212, 0) 72%
+    );
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise,
+  .fade,
+  .toast-in,
+  .skeleton::after {
+    animation: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
