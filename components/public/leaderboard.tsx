@@ -1,20 +1,33 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { CaretLeft, CaretRight, MagnifyingGlass, Receipt, X } from "@phosphor-icons/react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { MagnifyingGlass, Pause, Play, Receipt, X } from "@phosphor-icons/react";
 import { StatusBadge } from "@/components/ui/field";
 import { formatDate, formatRank, normalizeName } from "@/lib/format";
 import { cn } from "@/lib/cn";
 import type { PublicStudent } from "@/lib/types";
 
-const PAGE_SIZE = 10;
+const ROW_HEIGHT = 56;
 
 /**
- * Public leaderboard. Sorted A-Z, paginated in groups of 10 with next/previous arrows.
+ * Public leaderboard. Auto-scrolls A-Z and loops.
  */
 export function Leaderboard({ students }: { students: PublicStudent[] }) {
   const [query, setQuery] = useState("");
-  const [page, setPage] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const animationRef = useRef<number | null>(null);
+  const positionRef = useRef(0);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setPrefersReducedMotion(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setPrefersReducedMotion(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
 
   const sorted = useMemo(() => {
     const needle = normalizeName(query);
@@ -31,14 +44,71 @@ export function Leaderboard({ students }: { students: PublicStudent[] }) {
     );
   }, [students, query]);
 
+  const displayList = useMemo(() => {
+    if (sorted.length === 0) return [];
+    if (!query && !prefersReducedMotion) {
+      return [...sorted, ...sorted, ...sorted];
+    }
+    return sorted;
+  }, [sorted, query, prefersReducedMotion]);
+
   useEffect(() => {
-    setPage(0);
+    setPaused(false);
+    positionRef.current = 0;
+    if (trackRef.current) {
+      trackRef.current.style.transform = "translateY(0px)";
+    }
   }, [query, sorted.length]);
 
-  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
-  const safePage = Math.min(page, totalPages - 1);
-  const startIndex = safePage * PAGE_SIZE;
-  const visible = sorted.slice(startIndex, startIndex + PAGE_SIZE);
+  useEffect(() => {
+    if (
+      students.length === 0 ||
+      sorted.length === 0 ||
+      query ||
+      prefersReducedMotion
+    ) {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+        animationRef.current = null;
+      }
+      if (trackRef.current) {
+        trackRef.current.style.transform = "translateY(0px)";
+      }
+      positionRef.current = 0;
+      return;
+    }
+
+    const speed = 0.7;
+
+    const step = () => {
+      if (paused || !containerRef.current || !trackRef.current) {
+        animationRef.current = requestAnimationFrame(step);
+        return;
+      }
+
+      positionRef.current += speed;
+
+      const trackHeight = trackRef.current.scrollHeight;
+      const sectionHeight = trackHeight / 3;
+      const maxScroll = Math.max(0, sectionHeight);
+
+      if (maxScroll > 0 && positionRef.current >= maxScroll) {
+        positionRef.current -= maxScroll;
+      }
+
+      trackRef.current.style.transform = `translateY(-${positionRef.current}px)`;
+      animationRef.current = requestAnimationFrame(step);
+    };
+
+    animationRef.current = requestAnimationFrame(step);
+
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+        animationRef.current = null;
+      }
+    };
+  }, [paused, query, sorted.length, students.length, prefersReducedMotion]);
 
   return (
     <section aria-labelledby="leaderboard-heading">
@@ -83,6 +153,27 @@ export function Leaderboard({ students }: { students: PublicStudent[] }) {
               </button>
             ) : null}
           </div>
+
+          {!query && sorted.length > 0 && !prefersReducedMotion ? (
+            <button
+              type="button"
+              onClick={() => setPaused((p) => !p)}
+              aria-pressed={paused}
+              className="inline-flex h-10 items-center gap-2 rounded-control border border-line bg-surface px-3 text-xs font-medium text-ink transition-colors hover:bg-canvas"
+            >
+              {paused ? (
+                <>
+                  <Play size={14} weight="fill" />
+                  Play
+                </>
+              ) : (
+                <>
+                  <Pause size={14} weight="fill" />
+                  Pause
+                </>
+              )}
+            </button>
+          ) : null}
         </div>
       </div>
 
@@ -91,71 +182,89 @@ export function Leaderboard({ students }: { students: PublicStudent[] }) {
           <EmptyLedger />
         ) : sorted.length === 0 ? (
           <NoMatches query={query} onClear={() => setQuery("")} />
-        ) : (
-          <>
-            <ul className="grid lg:grid-cols-2 lg:gap-x-4">
-              {visible.map((student) => (
-                <li key={student.id}>
-                  <div className="flex items-center gap-3 rounded-[12px] px-3 py-2.5 transition-colors hover:bg-surface">
-                    <span
-                      className={cn(
-                        "tnum grid h-8 w-8 shrink-0 place-items-center rounded-[8px] font-mono text-[11px] font-semibold",
-                        rankTone(student.rank),
-                      )}
-                      aria-hidden="true"
-                    >
-                      {formatRank(student.rank)}
+        ) : !query && !prefersReducedMotion ? (
+          <div
+            ref={containerRef}
+            className="relative h-[448px] overflow-hidden"
+            role="region"
+            aria-label="Paid students leaderboard scrolling A to Z"
+          >
+            <div
+              ref={trackRef}
+              className="will-change-transform"
+              style={{ transform: "translateY(0px)" }}
+            >
+              {displayList.map((student, index) => (
+                <div
+                  key={`${student.id}-${index}`}
+                  className="flex items-center gap-3 rounded-[12px] px-3 py-2.5 transition-colors hover:bg-surface"
+                  style={{ height: ROW_HEIGHT }}
+                >
+                  <span
+                    className={cn(
+                      "tnum grid h-8 w-8 shrink-0 place-items-center rounded-[8px] font-mono text-[11px] font-semibold",
+                      rankTone(student.rank),
+                    )}
+                    aria-hidden="true"
+                  >
+                    {formatRank(student.rank)}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-medium text-ink">
+                      {student.full_name}
                     </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-medium text-ink">
-                        {student.full_name}
+                    {student.merit_number ? (
+                      <span className="mt-0.5 block truncate font-mono text-[10px] text-muted">
+                        Merit no. {student.merit_number}
                       </span>
-                      {student.merit_number ? (
-                        <span className="mt-0.5 block truncate font-mono text-[10px] text-muted">
-                          Merit no. {student.merit_number}
-                        </span>
-                      ) : null}
-                    </span>
-                    <StatusBadge status="paid" />
-                    <time
-                      dateTime={student.payment_date ?? undefined}
-                      className="hidden w-[86px] shrink-0 text-right font-mono text-[11px] text-muted sm:block"
-                    >
-                      {formatDate(student.payment_date)}
-                    </time>
-                  </div>
-                </li>
-              ))}
-            </ul>
-            {sorted.length > PAGE_SIZE ? (
-              <div className="mt-2 flex items-center justify-between border-t border-line px-3 py-2">
-                <p className="text-xs text-muted">
-                  {startIndex + 1}-{Math.min(startIndex + PAGE_SIZE, sorted.length)} of{" "}
-                  {sorted.length}
-                </p>
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => setPage((p) => Math.max(0, p - 1))}
-                    disabled={safePage === 0}
-                    aria-label="Previous page"
-                    className="grid h-8 w-8 place-items-center rounded-[8px] text-muted transition-colors hover:bg-surface hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
+                    ) : null}
+                  </span>
+                  <StatusBadge status="paid" />
+                  <time
+                    dateTime={student.payment_date ?? undefined}
+                    className="hidden w-[86px] shrink-0 text-right font-mono text-[11px] text-muted sm:block"
                   >
-                    <CaretLeft size={14} weight="bold" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-                    disabled={safePage === totalPages - 1}
-                    aria-label="Next page"
-                    className="grid h-8 w-8 place-items-center rounded-[8px] text-muted transition-colors hover:bg-surface hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    <CaretRight size={14} weight="bold" />
-                  </button>
+                    {formatDate(student.payment_date)}
+                  </time>
                 </div>
-              </div>
-            ) : null}
-          </>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <ul className="grid lg:grid-cols-2 lg:gap-x-4">
+            {sorted.map((student) => (
+              <li key={student.id}>
+                <div className="flex items-center gap-3 rounded-[12px] px-3 py-2.5 transition-colors hover:bg-surface">
+                  <span
+                    className={cn(
+                      "tnum grid h-8 w-8 shrink-0 place-items-center rounded-[8px] font-mono text-[11px] font-semibold",
+                      rankTone(student.rank),
+                    )}
+                    aria-hidden="true"
+                  >
+                    {formatRank(student.rank)}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-medium text-ink">
+                      {student.full_name}
+                    </span>
+                    {student.merit_number ? (
+                      <span className="mt-0.5 block truncate font-mono text-[10px] text-muted">
+                        Merit no. {student.merit_number}
+                      </span>
+                    ) : null}
+                  </span>
+                  <StatusBadge status="paid" />
+                  <time
+                    dateTime={student.payment_date ?? undefined}
+                    className="hidden w-[86px] shrink-0 text-right font-mono text-[11px] text-muted sm:block"
+                  >
+                    {formatDate(student.payment_date)}
+                  </time>
+                </div>
+              </li>
+            ))}
+          </ul>
         )}
       </div>
     </section>
