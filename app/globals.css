@@ -48,10 +48,34 @@
     --c-danger: #b42318;
     --c-danger-ink: #b42318;
     --c-danger-soft: #fdecea;
+    --c-glow-strong: rgba(65, 234, 212, 0.22);
+    --c-glow-soft: rgba(65, 234, 212, 0.1);
+  }
+
+  /* An explicit choice beats the operating-system preference. */
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+
+    --c-canvas: #001514;
+    --c-surface: #062220;
+    --c-surface-2: #0a2e2a;
+    --c-ink: #ffffff;
+    --c-muted: #9db8b3;
+    --c-line: #123a35;
+    --c-accent: #41ead4;
+    --c-accent-soft: #0d3b36;
+    --c-accent-ink: #41ead4;
+    --c-inverse: #0b302c;
+    --c-inverse-ink: #ffffff;
+    --c-danger: #b42318;
+    --c-danger-ink: #ff9a90;
+    --c-danger-soft: #3a1512;
+    --c-glow-strong: rgba(65, 234, 212, 0.16);
+    --c-glow-soft: rgba(65, 234, 212, 0.08);
   }
 
   @media (prefers-color-scheme: dark) {
-    :root {
+    :root:not([data-theme="light"]) {
       color-scheme: dark;
 
       --c-canvas: #001514;
@@ -68,6 +92,8 @@
       --c-danger: #b42318;
       --c-danger-ink: #ff9a90;
       --c-danger-soft: #3a1512;
+      --c-glow-strong: rgba(65, 234, 212, 0.16);
+      --c-glow-soft: rgba(65, 234, 212, 0.08);
     }
   }
 
@@ -263,18 +289,10 @@
    where the element ends, so it reads as light rather than a rectangle. */
 .hero-glow {
   background:
-    radial-gradient(46% 58% at 78% 10%, rgba(65, 234, 212, 0.22), rgba(65, 234, 212, 0) 72%),
-    radial-gradient(32% 42% at 58% 0%, rgba(65, 234, 212, 0.1), rgba(65, 234, 212, 0) 76%);
+    radial-gradient(46% 58% at 78% 10%, var(--c-glow-strong), rgba(65, 234, 212, 0) 72%),
+    radial-gradient(32% 42% at 58% 0%, var(--c-glow-soft), rgba(65, 234, 212, 0) 76%);
   -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 52%, transparent 100%);
   mask-image: linear-gradient(to bottom, #000 0%, #000 52%, transparent 100%);
-}
-
-@media (prefers-color-scheme: dark) {
-  .hero-glow {
-    background:
-      radial-gradient(46% 58% at 78% 10%, rgba(65, 234, 212, 0.16), rgba(65, 234, 212, 0) 74%),
-      radial-gradient(32% 42% at 58% 0%, rgba(65, 234, 212, 0.08), rgba(65, 234, 212, 0) 78%);
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

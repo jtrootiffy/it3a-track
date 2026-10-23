@@ -1,4 +1,5 @@
 import { ButtonLink } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Leaderboard } from "@/components/public/leaderboard";
 import { SetupNotice } from "@/components/public/setup-notice";
 import { SiteHeader } from "@/components/public/site-header";
@@ -80,14 +81,17 @@ export default async function HomePage() {
       <footer className="border-t border-line">
         <div className="mx-auto flex w-full max-w-6xl flex-col items-center justify-between gap-4 px-5 py-7 sm:flex-row">
           <p className="text-xs text-muted">IT3A Organizational Fee Tracker.</p>
-          <ButtonLink
-            href="/login"
-            variant="ghost"
-            size="sm"
-            className="border border-line px-3.5"
-          >
-            Admin Login
-          </ButtonLink>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <ButtonLink
+              href="/login"
+              variant="ghost"
+              size="sm"
+              className="border border-line px-3.5"
+            >
+              Admin Login
+            </ButtonLink>
+          </div>
         </div>
       </footer>
     </div>

@@ -137,9 +137,10 @@ Type: Outfit for text, JetBrains Mono for figures.
 | Accent | `#41EAD4` | PAID state, focus rings, the hero sheen, and primary actions |
 | Ink | `#001514` | Type, inverse cards, and the dark canvas |
 
-Dark mode derives its neutrals from the same three colours; the accent never changes. Motion is
-limited to entry reveals and collapses under `prefers-reduced-motion`. Cards use 16px radii,
-controls use 10px, and figures are set in JetBrains Mono.
+Dark mode derives its neutrals from the same three colours; the accent never changes. A theme
+button beside Admin Login overrides the system preference and remembers the choice on the device.
+Motion is limited to entry reveals and collapses under `prefers-reduced-motion`. Cards use 16px
+radii, controls use 10px, and figures are set in JetBrains Mono.
 
 ---
 

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { LoginForm } from "./login-form";
 import { LogoMark } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { getAdminProfile, getSessionUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
@@ -62,12 +63,12 @@ export default async function LoginPage({
             <LogoMark />
             <span className="text-[13px] font-semibold tracking-tight">IT3A - TRACK</span>
           </span>
-          <Link
-            href="/"
-            className="text-xs text-muted transition-colors hover:text-ink lg:ml-auto"
-          >
-            Back to tracker
-          </Link>
+          <div className="flex items-center gap-3 lg:ml-auto">
+            <ThemeToggle />
+            <Link href="/" className="text-xs text-muted transition-colors hover:text-ink">
+              Back to tracker
+            </Link>
+          </div>
         </div>
 
         <div className="flex flex-1 items-center justify-center py-10">
