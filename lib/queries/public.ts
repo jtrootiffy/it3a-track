@@ -25,8 +25,13 @@ export type PublicLedger =
  * the result to paid rows; the explicit filter keeps the intent obvious.
  */
 export async function getPublicLedger(): Promise<PublicLedger> {
-  if (!readSupabaseEnv().configured) {
-    return { ready: false, reason: "unconfigured" };
+  const env = readSupabaseEnv();
+  if (!env.configured) {
+    return {
+      ready: false,
+      reason: "unconfigured",
+      detail: `Missing or invalid in this deployment: ${env.missing.join(", ")}`,
+    };
   }
 
   try {

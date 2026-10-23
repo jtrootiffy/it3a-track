@@ -2,6 +2,8 @@ export type SupabaseEnv = {
   url: string;
   anonKey: string;
   configured: boolean;
+  /** Variables that are absent or still hold a placeholder value. */
+  missing: string[];
 };
 
 /**
@@ -32,11 +34,15 @@ export function readSupabaseEnv(): SupabaseEnv {
   const url = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").trim();
   const anonKey = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "").trim();
 
-  const configured =
-    /^https?:\/\//.test(url) &&
-    anonKey.length > 20 &&
-    !url.includes("YOUR-PROJECT-REF") &&
-    !anonKey.includes("YOUR-ANON-KEY");
+  const missing: string[] = [];
 
-  return { url, anonKey, configured };
+  if (!/^https?:\/\//.test(url) || url.includes("YOUR-PROJECT-REF")) {
+    missing.push("NEXT_PUBLIC_SUPABASE_URL");
+  }
+
+  if (anonKey.length <= 20 || anonKey.includes("YOUR-ANON-KEY")) {
+    missing.push("NEXT_PUBLIC_SUPABASE_ANON_KEY");
+  }
+
+  return { url, anonKey, configured: missing.length === 0, missing };
 }
