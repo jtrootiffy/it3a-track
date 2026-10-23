@@ -16,9 +16,20 @@ const jetbrains = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: "IT3A - TRACK",
-  description: "IT3A Organizational Fee Tracker.",
+  description: "IT3A ISCS Funds Payment Tracker",
   applicationName: "IT3A - TRACK",
   formatDetection: { telephone: false },
+  openGraph: {
+    title: "IT3A - TRACK",
+    description: "IT3A ISCS Funds Payment Tracker",
+    siteName: "IT3A - TRACK",
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: "IT3A - TRACK",
+    description: "IT3A ISCS Funds Payment Tracker",
+  },
 };
 
 export const viewport: Viewport = {
