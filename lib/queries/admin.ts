@@ -28,7 +28,9 @@ export async function getAdminSnapshot(): Promise<
   const [studentsResult, auditResult] = await Promise.all([
     supabase
       .from("it3a_students")
-      .select("id, full_name, payment_status, payment_date, remarks, created_at, updated_at")
+      .select(
+        "id, full_name, payment_status, payment_date, remarks, merit_number, created_at, updated_at",
+      )
       .order("full_name", { ascending: true }),
     supabase
       .from("it3a_payment_audit_log")

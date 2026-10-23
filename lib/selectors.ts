@@ -7,6 +7,7 @@ export type PublicLedgerRow = {
   full_name: string;
   payment_status: PaymentStatus;
   payment_date: string | null;
+  merit_number: string | null;
   created_at: string;
 };
 

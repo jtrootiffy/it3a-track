@@ -39,7 +39,7 @@ export async function getPublicLedger(): Promise<PublicLedger> {
 
     const { data, error } = await supabase
       .from("it3a_students")
-      .select("id, full_name, payment_status, payment_date, created_at")
+      .select("id, full_name, payment_status, payment_date, merit_number, created_at")
       .eq("payment_status", "paid")
       .order("payment_date", { ascending: true })
       .limit(1000);

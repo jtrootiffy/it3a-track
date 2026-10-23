@@ -1,5 +1,5 @@
-full_name,payment_status,remarks
-Juan Miguel Dela Cruz,paid,Paid in cash
-Ana Sofia Reyes,paid,GCash transfer
-Mark Angelo Santos,unpaid,
-Ma. Cristina Bautista,unpaid,Promised next week
+full_name,payment_status,remarks,merit_number
+Juan Miguel Dela Cruz,paid,Paid in cash,MC-0142
+Ana Sofia Reyes,paid,GCash transfer,MC-0143
+Mark Angelo Santos,unpaid,,
+Ma. Cristina Bautista,unpaid,Promised next week,

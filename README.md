@@ -11,8 +11,9 @@ administrators can see who has not.
 
 - **Who pays:** every student in IT3A.
 - **Fee:** ₱50, one-time, for the ISCS Days organizational fund.
-- **Public page:** paid students only, plus the running total collected.
-- **Admin dashboard:** the full roster, including unpaid students, remarks, and payment history.
+- **Public page:** paid students only, their merit numbers, plus the running total collected.
+- **Admin dashboard:** the full roster, including unpaid students, remarks, merit numbers, and
+  payment history.
 - **Administrators:** Dexter Gravoso and Troy Lagahit. Their login identifiers live in
   `.env.local`, not in this repository, because the repository is public.
 - **Currency:** Philippine peso (₱).
@@ -33,8 +34,9 @@ ever exposed publicly, so the page cannot be used to rank or shame anyone by abs
 **Public page (`/`)**
 
 - "N Students Paid" and "₱N Collected" headline figures, computed from the database on every request.
-- Leaderboard of paid students: rank, full name, green PAID badge, payment date.
-- Search by name, plus payment-order / A-Z / Z-A sorting.
+- Leaderboard of paid students: rank, full name, merit number when recorded, green PAID badge,
+  payment date.
+- Search by name or merit number, plus payment-order / A-Z / Z-A sorting.
 - Empty state reads "0 Students Paid" and "₱0 Collected".
 - Total enrollment, unpaid counts, percentages, and progress bars are **never** exposed.
 
@@ -49,8 +51,9 @@ ever exposed publicly, so the page cannot be used to rank or shame anyone by abs
 **Admin dashboard (`/admin`)**
 
 - Private totals: collected, paid, unpaid, and roster size.
-- Full roster with remarks, payment dates, status filter, and search.
-- Mark paid / mark unpaid, add, edit, and delete (with a confirmation dialog).
+- Full roster with remarks, payment dates, merit numbers, status filter, and search.
+- Mark paid / mark unpaid, add, edit, and delete (with a confirmation dialog). Marking paid
+  opens a small dialog where an optional merit number can be recorded.
 - Payment history: who changed what, and when.
 - Sign out clears the session cookies.
 
@@ -62,6 +65,8 @@ ever exposed publicly, so the page cannot be used to rank or shame anyone by abs
 - Marking paid adds ₱50; marking unpaid removes ₱50. There is no stored total to drift.
 - A database trigger stamps `payment_date` when a student becomes paid and clears it when
   they are reverted. The history survives in the audit log.
+- A merit number is optional. It appears on the public leaderboard, can only exist on a paid
+  student, and is cleared when a student is marked unpaid.
 - Duplicate names are rejected case- and whitespace-insensitively.
 
 ---
@@ -72,7 +77,8 @@ ever exposed publicly, so the page cannot be used to rank or shame anyone by abs
    `npm run import:students -- --file roster.csv`.
 2. Send the public link to the class. A student checks that their name appears after paying.
 3. As cash comes in, an administrator marks each student paid. The payment date is stamped
-   automatically and the total moves by ₱50.
+   automatically, the total moves by ₱50, and an optional merit card number can be recorded in
+   the same step.
 4. If a payment is refunded or recorded by mistake, mark the student unpaid. The total drops
    by ₱50 and the correction stays in the payment history.
 5. Before ISCS Days, filter the dashboard roster to unpaid. That filtered list is the
@@ -145,14 +151,15 @@ npm run import:students -- --file roster.csv --dry-run
 ```
 
 ```csv
-full_name,payment_status,remarks
-Juan Miguel Dela Cruz,paid,Paid in cash
-Ana Sofia Reyes,unpaid,
+full_name,payment_status,remarks,merit_number
+Juan Miguel Dela Cruz,paid,Paid in cash,MC-0142
+Ana Sofia Reyes,unpaid,,
 ```
 
 Only `full_name` is required. Importing the same file twice updates rows instead of duplicating
-them. See `roster.sample.csv`. Unpaid rows stay private; the public page only ever reads the
-paid ones.
+them. If the file includes a `merit_number` column, it is applied to paid students only and
+ignored for unpaid rows. See `roster.sample.csv`. Unpaid rows stay private; the public page only
+ever reads the paid ones.
 
 ## 5. Run it
 
@@ -171,11 +178,12 @@ All access control lives in Postgres. The UI is a convenience layer.
 
 | Role            | Can do                                                                                       |
 | --------------- | -------------------------------------------------------------------------------------------- |
-| `anon`          | Read **paid** rows only, and only `id, full_name, payment_status, payment_date, created_at`. Never `remarks`, never unpaid rows. |
+| `anon`          | Read **paid** rows only, and only `id, full_name, payment_status, payment_date, merit_number, created_at`. Never `remarks`, never unpaid rows. |
 | `authenticated` | Full roster access **only** when `it3a_is_admin()` finds the user in `it3a_admins`.            |
 | `service_role`  | Server-side only. Used by the login action to resolve username to email and by provisioning scripts. |
 
 - Column-level grants mean `select=remarks` from the public fails, even for a paid student.
+  Merit numbers are public for paid students, and unpaid rows cannot hold one.
 - `it3a_admins` is readable only row-by-row by the signed-in administrator themself.
 - `it3a_payment_audit_log` is read-only for administrators. Writes come from a
   `SECURITY DEFINER` trigger, so no client can forge history.
@@ -282,7 +290,8 @@ student paid from the dashboard is the only supported way to appear there.
 ## Data model
 
 ```
-it3a_students          id, full_name, payment_status, payment_date, remarks, created_at, updated_at
+it3a_students          id, full_name, payment_status, payment_date, remarks, merit_number,
+                       created_at, updated_at
 it3a_admins            id -> auth.users, username, email, full_name, created_at
 it3a_signup_allowlist  email, username, full_name, created_at
 it3a_payment_audit_log id, student_id (no FK), student_name, admin_id, admin_username,
@@ -291,6 +300,9 @@ it3a_payment_audit_log id, student_id (no FK), student_name, admin_id, admin_use
 
 - `payment_status` is `paid` or `unpaid`; a check constraint keeps `payment_date` consistent
   with it.
+- `merit_number` is optional, at most 40 characters, and may only be set on a paid student. It is
+  public on the leaderboard. The trigger clears it on revert, so an unpaid row can never keep a
+  stale merit number.
 - `full_name` has a unique index on `lower(btrim(full_name))`.
 - `student_id` in the audit log deliberately has no foreign key, so history outlives deletions.
 - Amounts are never stored.
@@ -312,7 +324,8 @@ lib/
   queries/                 public and admin read paths
   supabase/                browser, server, and service clients
   auth.ts                  requireAdmin / getAdminProfile
-supabase/migrations/       0001 schema, 0002 RLS, 0003 signup lockdown
+supabase/migrations/       0001 schema, 0002 RLS, 0003 signup lockdown, 0004 merit number,
+                           0005 public merit column
 scripts/                   migrate, setup-admins, import-students
 ```
 

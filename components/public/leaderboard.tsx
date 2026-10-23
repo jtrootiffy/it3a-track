@@ -25,7 +25,11 @@ export function Leaderboard({ students }: { students: PublicStudent[] }) {
   const visible = useMemo(() => {
     const needle = normalizeName(query);
     const filtered = needle
-      ? students.filter((student) => normalizeName(student.full_name).includes(needle))
+      ? students.filter(
+          (student) =>
+            normalizeName(student.full_name).includes(needle) ||
+            normalizeName(student.merit_number ?? "").includes(needle),
+        )
       : students;
 
     if (sort === "payment") return filtered;
@@ -53,7 +57,7 @@ export function Leaderboard({ students }: { students: PublicStudent[] }) {
         <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
           <div className="relative">
             <label htmlFor="student-search" className="sr-only">
-              Search paid students by name
+              Search paid students by name or merit number
             </label>
             <MagnifyingGlass
               size={15}
@@ -66,7 +70,7 @@ export function Leaderboard({ students }: { students: PublicStudent[] }) {
               type="search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search a name"
+              placeholder="Name or merit no."
               autoComplete="off"
               className="h-10 w-full rounded-control border border-line bg-canvas pl-9 pr-9 text-sm text-ink transition-[border-color,box-shadow] placeholder:text-muted/90 focus:border-accent-ink focus:outline-none focus:ring-4 focus:ring-accent/25 sm:w-60 [&::-webkit-search-cancel-button]:appearance-none"
             />
@@ -127,8 +131,15 @@ export function Leaderboard({ students }: { students: PublicStudent[] }) {
                   >
                     {formatRank(student.rank)}
                   </span>
-                  <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink">
-                    {student.full_name}
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-medium text-ink">
+                      {student.full_name}
+                    </span>
+                    {student.merit_number ? (
+                      <span className="mt-0.5 block truncate font-mono text-[10px] text-muted">
+                        Merit no. {student.merit_number}
+                      </span>
+                    ) : null}
                   </span>
                   <StatusBadge status="paid" />
                   <time
@@ -170,7 +181,7 @@ function EmptyLedger() {
 function NoMatches({ query, onClear }: { query: string; onClear: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center gap-3 px-6 py-14 text-center">
-      <p className="text-sm font-medium text-ink">No paid student matches that name.</p>
+      <p className="text-sm font-medium text-ink">No paid student matches that search.</p>
       <p className="max-w-xs text-sm text-muted">
         Nothing found for <span className="font-medium text-ink">{query}</span>.
       </p>

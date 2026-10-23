@@ -26,16 +26,33 @@ const remarksField = z
 
 const statusField = z.enum(["paid", "unpaid"]);
 
-const studentSchema = z.object({
-  fullName: nameField,
-  remarks: remarksField,
-  status: statusField,
-});
+const meritNumberField = z
+  .string()
+  .trim()
+  .max(40, "Merit number must be 40 characters or fewer.");
 
-const statusSchema = z.object({
-  id: z.string().uuid("Unknown student record."),
-  status: statusField,
-});
+const studentSchema = z
+  .object({
+    fullName: nameField,
+    remarks: remarksField,
+    status: statusField,
+    meritNumber: meritNumberField,
+  })
+  .refine((value) => value.status === "paid" || value.meritNumber.length === 0, {
+    message: "A merit number can only be recorded for a paid student.",
+    path: ["meritNumber"],
+  });
+
+const statusSchema = z
+  .object({
+    id: z.string().uuid("Unknown student record."),
+    status: statusField,
+    meritNumber: meritNumberField.optional(),
+  })
+  .refine((value) => value.status === "paid" || !value.meritNumber, {
+    message: "A merit number can only be recorded for a paid student.",
+    path: ["meritNumber"],
+  });
 
 const idSchema = z.object({
   id: z.string().uuid("Unknown student record."),
@@ -60,7 +77,7 @@ function describeDbError(error: DbError): string {
     return "You do not have permission to change this record.";
   }
   if (error.code === "23514" || /violates check constraint/i.test(error.message)) {
-    return "Those details did not pass validation. Check the name and try again.";
+    return "Those details did not pass validation. Check the fields and try again.";
   }
   return "Could not save your change. Please try again.";
 }
@@ -77,6 +94,7 @@ export async function createStudent(input: {
   fullName: string;
   remarks?: string;
   status: PaymentStatus;
+  meritNumber?: string;
 }): Promise<ActionResult> {
   const ctx = await requireAdmin();
   if (!ctx.ok) return { ok: false, error: ctx.error };
@@ -85,6 +103,7 @@ export async function createStudent(input: {
     fullName: input.fullName,
     remarks: input.remarks ?? "",
     status: input.status,
+    meritNumber: input.meritNumber ?? "",
   });
 
   if (!parsed.success) {
@@ -95,16 +114,21 @@ export async function createStudent(input: {
     full_name: parsed.data.fullName,
     remarks: parsed.data.remarks,
     payment_status: parsed.data.status,
+    merit_number: parsed.data.meritNumber || null,
   });
 
   if (error) return { ok: false, error: describeDbError(error) };
+
+  const meritNote = parsed.data.meritNumber
+    ? ` Merit no. ${parsed.data.meritNumber} recorded.`
+    : "";
 
   revalidateLedger();
   return {
     ok: true,
     message:
       parsed.data.status === "paid"
-        ? `${parsed.data.fullName} added and marked paid. \u20b150 collected.`
+        ? `${parsed.data.fullName} added and marked paid. \u20b150 collected.${meritNote}`
         : `${parsed.data.fullName} added to the roster.`,
   };
 }
@@ -114,6 +138,7 @@ export async function updateStudent(input: {
   fullName: string;
   remarks?: string;
   status: PaymentStatus;
+  meritNumber?: string;
 }): Promise<ActionResult> {
   const ctx = await requireAdmin();
   if (!ctx.ok) return { ok: false, error: ctx.error };
@@ -127,6 +152,7 @@ export async function updateStudent(input: {
     fullName: input.fullName,
     remarks: input.remarks ?? "",
     status: input.status,
+    meritNumber: input.meritNumber ?? "",
   });
 
   if (!parsed.success) {
@@ -139,6 +165,7 @@ export async function updateStudent(input: {
       full_name: parsed.data.fullName,
       remarks: parsed.data.remarks,
       payment_status: parsed.data.status,
+      merit_number: parsed.data.meritNumber || null,
     })
     .eq("id", idParsed.data.id);
 
@@ -151,6 +178,7 @@ export async function updateStudent(input: {
 export async function setPaymentStatus(input: {
   id: string;
   status: PaymentStatus;
+  meritNumber?: string;
 }): Promise<ActionResult> {
   const ctx = await requireAdmin();
   if (!ctx.ok) return { ok: false, error: ctx.error };
@@ -160,9 +188,17 @@ export async function setPaymentStatus(input: {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid request." };
   }
 
+  const patch: { payment_status: PaymentStatus; merit_number?: string } = {
+    payment_status: parsed.data.status,
+  };
+
+  if (parsed.data.status === "paid" && parsed.data.meritNumber) {
+    patch.merit_number = parsed.data.meritNumber;
+  }
+
   const { data, error } = await ctx.supabase
     .from("it3a_students")
-    .update({ payment_status: parsed.data.status })
+    .update(patch)
     .eq("id", parsed.data.id)
     .select("full_name")
     .maybeSingle();
@@ -172,11 +208,16 @@ export async function setPaymentStatus(input: {
 
   revalidateLedger();
 
+  const meritNote =
+    parsed.data.status === "paid" && parsed.data.meritNumber
+      ? ` Merit no. ${parsed.data.meritNumber} recorded.`
+      : "";
+
   return {
     ok: true,
     message:
       parsed.data.status === "paid"
-        ? `${data.full_name} marked paid. \u20b150 added to the collection.`
+        ? `${data.full_name} marked paid. \u20b150 added to the collection.${meritNote}`
         : `${data.full_name} marked unpaid. \u20b150 removed from the collection.`,
   };
 }

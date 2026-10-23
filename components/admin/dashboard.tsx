@@ -20,13 +20,14 @@ import { Button } from "@/components/ui/button";
 import { Spinner, StatusBadge } from "@/components/ui/field";
 import {
   DeleteStudentDialog,
+  MarkPaidDialog,
   StudentFormDialog,
 } from "@/components/admin/student-dialogs";
 import { setPaymentStatus } from "@/lib/actions/students";
 import { cn } from "@/lib/cn";
 import { formatDate, formatDateTime, formatPeso, normalizeName } from "@/lib/format";
 import type { AdminSnapshot } from "@/lib/selectors";
-import type { AdminStudent, PaymentStatus } from "@/lib/types";
+import type { AdminStudent } from "@/lib/types";
 
 type Tab = "roster" | "history";
 type StatusFilter = "all" | "paid" | "unpaid";
@@ -45,6 +46,7 @@ export function AdminDashboard({ snapshot }: { snapshot: AdminSnapshot }) {
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<AdminStudent | null>(null);
   const [deleting, setDeleting] = useState<AdminStudent | null>(null);
+  const [markingPaid, setMarkingPaid] = useState<AdminStudent | null>(null);
 
   const filtered = useMemo(() => {
     const needle = normalizeName(query);
@@ -56,9 +58,15 @@ export function AdminDashboard({ snapshot }: { snapshot: AdminSnapshot }) {
   }, [students, query, filter]);
 
   async function handleToggle(student: AdminStudent) {
-    const nextStatus: PaymentStatus = student.payment_status === "paid" ? "unpaid" : "paid";
+    // Marking paid opens a small dialog so a merit number can be recorded at
+    // the same moment. Marking unpaid is immediate and clears the merit number.
+    if (student.payment_status === "unpaid") {
+      setMarkingPaid(student);
+      return;
+    }
+
     setBusyId(student.id);
-    const result = await setPaymentStatus({ id: student.id, status: nextStatus });
+    const result = await setPaymentStatus({ id: student.id, status: "unpaid" });
     setBusyId(null);
 
     if (!result.ok) {
@@ -67,6 +75,12 @@ export function AdminDashboard({ snapshot }: { snapshot: AdminSnapshot }) {
     }
 
     pushToast("success", result.message ?? "Payment status updated.");
+    router.refresh();
+  }
+
+  function handlePaid(message: string) {
+    setMarkingPaid(null);
+    pushToast("success", message);
     router.refresh();
   }
 
@@ -233,7 +247,14 @@ export function AdminDashboard({ snapshot }: { snapshot: AdminSnapshot }) {
                           key={student.id}
                           className="border-b border-line/60 align-middle transition-colors last:border-0 hover:bg-surface/70"
                         >
-                          <td className="px-4 py-3 font-medium text-ink">{student.full_name}</td>
+                          <td className="px-4 py-3">
+                            <p className="font-medium text-ink">{student.full_name}</p>
+                            {student.merit_number ? (
+                              <p className="mt-0.5 font-mono text-[10px] text-muted">
+                                Merit no. {student.merit_number}
+                              </p>
+                            ) : null}
+                          </td>
                           <td className="px-4 py-3">
                             <StatusBadge status={student.payment_status} />
                           </td>
@@ -375,6 +396,15 @@ export function AdminDashboard({ snapshot }: { snapshot: AdminSnapshot }) {
           student={deleting}
           onClose={() => setDeleting(null)}
           onDeleted={handleDeleted}
+        />
+      ) : null}
+
+      {markingPaid ? (
+        <MarkPaidDialog
+          key={markingPaid.id}
+          student={markingPaid}
+          onClose={() => setMarkingPaid(null)}
+          onPaid={handlePaid}
         />
       ) : null}
 
@@ -557,6 +587,11 @@ function RosterCard({
               ? `Paid ${formatDate(student.payment_date)}`
               : "Not paid"}
           </p>
+          {student.merit_number ? (
+            <p className="mt-0.5 font-mono text-[10px] text-muted">
+              Merit no. {student.merit_number}
+            </p>
+          ) : null}
         </div>
         <StatusBadge status={student.payment_status} />
       </div>

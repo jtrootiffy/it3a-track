@@ -5,7 +5,7 @@ import { Check, Trash, WarningCircle } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Spinner, Textarea } from "@/components/ui/field";
 import { Modal } from "@/components/ui/modal";
-import { createStudent, deleteStudent, updateStudent } from "@/lib/actions/students";
+import { createStudent, deleteStudent, setPaymentStatus, updateStudent } from "@/lib/actions/students";
 import { cn } from "@/lib/cn";
 import type { AdminStudent, PaymentStatus } from "@/lib/types";
 
@@ -27,6 +27,7 @@ export function StudentFormDialog({
   const [fullName, setFullName] = useState(student?.full_name ?? "");
   const [remarks, setRemarks] = useState(student?.remarks ?? "");
   const [status, setStatus] = useState<PaymentStatus>(student?.payment_status ?? "unpaid");
+  const [meritNumber, setMeritNumber] = useState(student?.merit_number ?? "");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -49,8 +50,14 @@ export function StudentFormDialog({
           fullName,
           remarks,
           status,
+          meritNumber: status === "paid" ? meritNumber : "",
         })
-      : await createStudent({ fullName, remarks, status });
+      : await createStudent({
+          fullName,
+          remarks,
+          status,
+          meritNumber: status === "paid" ? meritNumber : "",
+        });
 
     setBusy(false);
 
@@ -106,7 +113,10 @@ export function StudentFormDialog({
           >
             <button
               type="button"
-              onClick={() => setStatus("unpaid")}
+              onClick={() => {
+                setStatus("unpaid");
+                setMeritNumber("");
+              }}
               aria-pressed={status === "unpaid"}
               disabled={busy}
               className={cn(
@@ -141,6 +151,26 @@ export function StudentFormDialog({
           </p>
         </div>
 
+        <Field
+          label="Merit number"
+          htmlFor="student-merit"
+          hint={
+            status === "paid"
+              ? "Optional. The merit card number issued with this payment."
+              : "Only a paid student can have a merit number."
+          }
+        >
+          <Input
+            id="student-merit"
+            value={meritNumber}
+            onChange={(event) => setMeritNumber(event.target.value)}
+            placeholder="e.g. MC-0142"
+            autoComplete="off"
+            maxLength={40}
+            disabled={busy || status !== "paid"}
+          />
+        </Field>
+
         <Field label="Remarks" htmlFor="student-remarks" hint="Optional. Visible to administrators only.">
           <Textarea
             id="student-remarks"
@@ -160,6 +190,97 @@ export function StudentFormDialog({
           <Button type="submit" disabled={busy}>
             {busy ? <Spinner /> : null}
             {editing ? "Save changes" : "Add student"}
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Mark paid                                                                   */
+/* -------------------------------------------------------------------------- */
+
+export function MarkPaidDialog({
+  student,
+  onClose,
+  onPaid,
+}: {
+  student: AdminStudent;
+  onClose: () => void;
+  onPaid: (message: string) => void;
+}) {
+  const [meritNumber, setMeritNumber] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setBusy(true);
+    setError(null);
+
+    const result = await setPaymentStatus({
+      id: student.id,
+      status: "paid",
+      meritNumber,
+    });
+
+    setBusy(false);
+
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+
+    onPaid(result.message ?? "Payment recorded.");
+  }
+
+  return (
+    <Modal
+      open
+      onClose={busy ? () => undefined : onClose}
+      title="Mark as paid"
+      description="₱50 is added to the collection and today's date is stamped automatically."
+    >
+      <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+        <div className="rounded-control border border-line bg-surface px-3.5 py-3">
+          <p className="text-sm font-medium text-ink">{student.full_name}</p>
+          <p className="mt-0.5 text-xs text-muted">Currently marked unpaid.</p>
+        </div>
+
+        {error ? (
+          <div
+            role="alert"
+            className="flex items-start gap-2.5 rounded-control border border-danger/25 bg-danger-soft px-3.5 py-3 text-[13px] leading-relaxed text-danger-ink"
+          >
+            <WarningCircle size={17} weight="fill" aria-hidden="true" className="mt-px shrink-0" />
+            <p>{error}</p>
+          </div>
+        ) : null}
+
+        <Field
+          label="Merit number"
+          htmlFor="mark-paid-merit"
+          hint="Optional. Leave blank if no merit card was issued."
+        >
+          <Input
+            id="mark-paid-merit"
+            value={meritNumber}
+            onChange={(event) => setMeritNumber(event.target.value)}
+            placeholder="e.g. MC-0142"
+            autoComplete="off"
+            maxLength={40}
+            disabled={busy}
+          />
+        </Field>
+
+        <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:justify-end">
+          <Button type="button" variant="secondary" onClick={onClose} disabled={busy}>
+            Cancel
+          </Button>
+          <Button type="submit" disabled={busy}>
+            {busy ? <Spinner /> : <Check size={15} weight="bold" aria-hidden="true" />}
+            Mark as paid
           </Button>
         </div>
       </form>

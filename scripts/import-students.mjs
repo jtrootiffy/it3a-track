@@ -9,6 +9,7 @@
  *   full_name        required
  *   payment_status   optional: paid | unpaid (default unpaid)
  *   remarks          optional
+ *   merit_number     optional: paid students only (ignored for unpaid rows)
  *
  * Matching is case- and whitespace-insensitive on the full name, so running the
  * import twice updates rather than duplicates. Payment dates and audit entries
@@ -118,6 +119,7 @@ async function main() {
 
   const statusIndex = header.indexOf("payment_status");
   const remarksIndex = header.indexOf("remarks");
+  const meritIndex = header.indexOf("merit_number");
 
   const records = [];
   const seen = new Set();
@@ -146,11 +148,31 @@ async function main() {
       continue;
     }
 
-    records.push({
+    const record = {
       full_name: fullName,
       payment_status: status,
       remarks: (cells[remarksIndex] ?? "").trim(),
-    });
+    };
+
+    if (meritIndex !== -1) {
+      let meritNumber = (cells[meritIndex] ?? "").trim();
+
+      if (status !== "paid" && meritNumber) {
+        console.log(
+          `  skip merit number on row ${i + 1}: only a paid student can have one`,
+        );
+        meritNumber = "";
+      }
+
+      if (meritNumber.length > 40) {
+        console.log(`  truncate merit number on row ${i + 1} to 40 characters`);
+        meritNumber = meritNumber.slice(0, 40).trim();
+      }
+
+      record.merit_number = meritNumber || null;
+    }
+
+    records.push(record);
   }
 
   if (records.length === 0) fail("No valid student rows found.");
@@ -192,6 +214,7 @@ async function main() {
           full_name: record.full_name,
           remarks: record.remarks,
           payment_status: record.payment_status,
+          ...(meritIndex !== -1 ? { merit_number: record.merit_number } : {}),
         })
         .eq("id", id);
 

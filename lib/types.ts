@@ -6,6 +6,8 @@ export type PublicStudent = {
   full_name: string;
   payment_status: PaymentStatus;
   payment_date: string | null;
+  /** Optional merit card number. Public for paid students, null otherwise. */
+  merit_number: string | null;
   created_at: string;
   /** 1-based position by payment date. Computed server-side, stable under search. */
   rank: number;
@@ -18,6 +20,8 @@ export type AdminStudent = {
   payment_status: PaymentStatus;
   payment_date: string | null;
   remarks: string;
+  /** Optional merit card number. Paid students only; cleared when marked unpaid. */
+  merit_number: string | null;
   created_at: string;
   updated_at: string;
 };
