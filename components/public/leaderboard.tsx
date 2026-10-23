@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { MagnifyingGlass, Pause, Play, Receipt, X } from "@phosphor-icons/react";
+import { MagnifyingGlass, Receipt, X } from "@phosphor-icons/react";
 import { StatusBadge } from "@/components/ui/field";
 import { formatDate, formatRank, normalizeName } from "@/lib/format";
 import { cn } from "@/lib/cn";
@@ -20,6 +20,11 @@ export function Leaderboard({ students }: { students: PublicStudent[] }) {
   const trackRef = useRef<HTMLDivElement>(null);
   const animationRef = useRef<number | null>(null);
   const positionRef = useRef(0);
+  const pausedRef = useRef(false);
+
+  useEffect(() => {
+    pausedRef.current = paused;
+  }, [paused]);
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -81,7 +86,7 @@ export function Leaderboard({ students }: { students: PublicStudent[] }) {
     const speed = 0.7;
 
     const step = () => {
-      if (paused || !containerRef.current || !trackRef.current) {
+      if (pausedRef.current || !containerRef.current || !trackRef.current) {
         animationRef.current = requestAnimationFrame(step);
         return;
       }
@@ -108,7 +113,7 @@ export function Leaderboard({ students }: { students: PublicStudent[] }) {
         animationRef.current = null;
       }
     };
-  }, [paused, query, sorted.length, students.length, prefersReducedMotion]);
+  }, [query, sorted.length, prefersReducedMotion]);
 
   return (
     <section aria-labelledby="leaderboard-heading">
@@ -153,27 +158,6 @@ export function Leaderboard({ students }: { students: PublicStudent[] }) {
               </button>
             ) : null}
           </div>
-
-          {!query && sorted.length > 0 && !prefersReducedMotion ? (
-            <button
-              type="button"
-              onClick={() => setPaused((p) => !p)}
-              aria-pressed={paused}
-              className="inline-flex h-10 items-center gap-2 rounded-control border border-line bg-surface px-3 text-xs font-medium text-ink transition-colors hover:bg-canvas"
-            >
-              {paused ? (
-                <>
-                  <Play size={14} weight="fill" />
-                  Play
-                </>
-              ) : (
-                <>
-                  <Pause size={14} weight="fill" />
-                  Pause
-                </>
-              )}
-            </button>
-          ) : null}
         </div>
       </div>
 
@@ -185,9 +169,15 @@ export function Leaderboard({ students }: { students: PublicStudent[] }) {
         ) : !query && !prefersReducedMotion ? (
           <div
             ref={containerRef}
-            className="relative h-[448px] overflow-hidden"
+            className="relative h-[448px] overflow-hidden cursor-pointer select-none"
             role="region"
-            aria-label="Paid students leaderboard scrolling A to Z"
+            aria-label="Paid students leaderboard scrolling A to Z. Hold or click to pause."
+            onMouseDown={() => setPaused(true)}
+            onMouseUp={() => setPaused(false)}
+            onMouseLeave={() => setPaused(false)}
+            onTouchStart={() => setPaused(true)}
+            onTouchEnd={() => setPaused(false)}
+            onTouchCancel={() => setPaused(false)}
           >
             <div
               ref={trackRef}
