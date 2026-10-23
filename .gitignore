@@ -1,37 +1,85 @@
-# dependencies
+# ---------------------------------------------------------------------------
+# Dependencies
+# ---------------------------------------------------------------------------
 /node_modules
 /.pnp
 .pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/releases
+!.yarn/plugins
+!.yarn/versions
+/.pnpm-store
 
-# next.js
+# ---------------------------------------------------------------------------
+# Environment files
+#
+# .env.local holds the Supabase service_role key, the database password, and the
+# administrator passwords. It must never reach the repository. Keep the tracked
+# template (.env.example) as the only environment file in Git.
+# ---------------------------------------------------------------------------
+.env
+.env.local
+.env.*.local
+.env.*
+!.env.example
+
+# ---------------------------------------------------------------------------
+# Next.js build output
+# ---------------------------------------------------------------------------
 /.next/
 /out/
+/build
 next-env.d.ts
 
-# production
-/build
+# ---------------------------------------------------------------------------
+# Testing and caches
+# ---------------------------------------------------------------------------
+/coverage
+/.turbo
+.eslintcache
+.cache
 
-# misc
-.DS_Store
-*.pem
+# ---------------------------------------------------------------------------
+# Vercel
+# ---------------------------------------------------------------------------
+.vercel
 
-# debug logs
+# ---------------------------------------------------------------------------
+# Supabase CLI scratch files
+# ---------------------------------------------------------------------------
+/supabase/.temp
+/supabase/.branches
+supabase/.temp/
+
+# ---------------------------------------------------------------------------
+# Logs
+# ---------------------------------------------------------------------------
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 *.log
 
-# local env files
-.env
-.env.local
-.env.*.local
-
-# vercel
-.vercel
-
-# typescript
+# ---------------------------------------------------------------------------
+# TypeScript
+# ---------------------------------------------------------------------------
 *.tsbuildinfo
 
-# supabase cli scratch
-/supabase/.temp
+# ---------------------------------------------------------------------------
+# Local database dumps and backups
+# ---------------------------------------------------------------------------
+*.dump
+*.sql.gz
+*.backup
+
+# ---------------------------------------------------------------------------
+# Editor and operating system files
+# ---------------------------------------------------------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+Desktop.ini

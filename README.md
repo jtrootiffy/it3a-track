@@ -2,9 +2,29 @@
 
 **IT3A Organizational Fee Tracker.**
 
-A production-ready tracker for the IT3A ₱50 organizational fee. The public page shows a
-leaderboard of students who have paid. A private dashboard lets exactly two administrators
-record payments, manage the roster, and review every change.
+IT3A - TRACK is the payment tracker for the IT3A organizational fund for the upcoming
+ISCS Days. Every student in the section owes a one-time ₱50 contribution. One shared roster
+answers two different questions: the class can see who has already paid, and the two
+administrators can see who has not.
+
+**At a glance**
+
+- **Who pays:** every student in IT3A.
+- **Fee:** ₱50, one-time, for the ISCS Days organizational fund.
+- **Public page:** paid students only, plus the running total collected.
+- **Admin dashboard:** the full roster, including unpaid students, remarks, and payment history.
+- **Administrators:** Dexter Gravoso and Troy Lagahit. Their login identifiers live in
+  `.env.local`, not in this repository, because the repository is public.
+- **Currency:** Philippine peso (₱).
+- **Hosting:** Supabase for Postgres and Auth, Vercel for the app.
+
+## Why the public page hides unpaid students
+
+Naming a classmate over an unpaid ₱50 before ISCS Days is not the point of this system. The
+public page works like a receipt board: it confirms who has paid and shows the fund growing.
+The unpaid list is a private working document for the two administrators, who need it to
+follow up individually. No enrollment count, unpaid count, percentage, or progress bar is
+ever exposed publicly, so the page cannot be used to rank or shame anyone by absence.
 
 ---
 
@@ -36,12 +56,27 @@ record payments, manage the roster, and review every change.
 
 **Money rules**
 
-- The fee is fixed at ₱50 and is not stored per student.
+- The fee is fixed at ₱50 per student for the ISCS Days organizational fund and is not stored
+  per student.
 - `Total Collected = paid_count × 50`, always derived from the rows.
 - Marking paid adds ₱50; marking unpaid removes ₱50. There is no stored total to drift.
 - A database trigger stamps `payment_date` when a student becomes paid and clears it when
   they are reverted. The history survives in the audit log.
 - Duplicate names are rejected case- and whitespace-insensitively.
+
+---
+
+## Collecting the fee
+
+1. Load the section roster once, from the dashboard or with
+   `npm run import:students -- --file roster.csv`.
+2. Send the public link to the class. A student checks that their name appears after paying.
+3. As cash comes in, an administrator marks each student paid. The payment date is stamped
+   automatically and the total moves by ₱50.
+4. If a payment is refunded or recorded by mistake, mark the student unpaid. The total drops
+   by ₱50 and the correction stays in the payment history.
+5. Before ISCS Days, filter the dashboard roster to unpaid. That filtered list is the
+   follow-up list.
 
 ---
 
@@ -116,7 +151,8 @@ Ana Sofia Reyes,unpaid,
 ```
 
 Only `full_name` is required. Importing the same file twice updates rows instead of duplicating
-them. See `roster.sample.csv`.
+them. See `roster.sample.csv`. Unpaid rows stay private; the public page only ever reads the
+paid ones.
 
 ## 5. Run it
 
@@ -186,6 +222,7 @@ distributed attack.
    - `/` shows the paid leaderboard.
    - `/admin` redirects to `/login` when signed out.
    - Both administrators can sign in and one can mark a student paid.
+6. Share the public URL with IT3A and give the two administrator logins to Dexter and Troy only.
 
 Any Node host that supports Next.js 15 works the same way; the server actions need a Node
 runtime, which is the default.
@@ -221,6 +258,12 @@ right, reset the database password in **Project Settings -> Database** and re-co
 
 The username is missing the project ref, or `DATABASE_URL` points at the pooler of a different
 region. Copy the string from the dashboard rather than assembling it.
+
+### A student paid but is not on the public page
+
+Check the roster in the dashboard. The public page only lists rows with `payment_status = paid`,
+and the database trigger sets `payment_date` at the moment the status changes. Marking the
+student paid from the dashboard is the only supported way to appear there.
 
 ---
 
