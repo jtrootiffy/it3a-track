@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="300" viewBox="0 0 1200 300" role="img" aria-label="IT3A - TRACK, IT3A ISCS Funds Payment Tracker">
+  <defs>
+    <radialGradient id="glow" cx="78%" cy="10%" r="72%">
+      <stop offset="0" stop-color="#41EAD4" stop-opacity="0.34"/>
+      <stop offset="0.55" stop-color="#41EAD4" stop-opacity="0.08"/>
+      <stop offset="1" stop-color="#41EAD4" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="divider" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#41EAD4" stop-opacity="0"/>
+      <stop offset="0.35" stop-color="#41EAD4" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#41EAD4" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="rule" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#41EAD4"/>
+      <stop offset="1" stop-color="#41EAD4" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="300" rx="28" fill="#FFFFFF"/>
+  <rect width="1200" height="300" rx="28" fill="url(#glow)"/>
+  <rect x="0.5" y="0.5" width="1199" height="299" rx="27.5" fill="none" stroke="#D9E5E2"/>
+
+  <!-- mark -->
+  <rect x="64" y="80" width="88" height="88" rx="20" fill="#41EAD4"/>
+  <text x="108" y="138" text-anchor="middle" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="33" font-weight="700" letter-spacing="-1" fill="#001514">3A</text>
+
+  <!-- wordmark -->
+  <text x="176" y="130" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="60" font-weight="650" letter-spacing="-2.5" fill="#001514">IT3A - TRACK</text>
+  <text x="178" y="166" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="21" fill="#4B6461">IT3A ISCS Funds Payment Tracker</text>
+
+  <!-- live url -->
+  <rect x="64" y="200" width="272" height="42" rx="10" fill="#F4F8F7" stroke="#D9E5E2"/>
+  <circle cx="88" cy="221" r="5" fill="#41EAD4"/>
+  <text x="102" y="226" font-family="'JetBrains Mono', Consolas, 'Segoe UI', monospace" font-size="14.5" letter-spacing="0.2" fill="#0A6B62">it3a-track.vercel.app</text>
+
+  <!-- divider -->
+  <line x1="690" y1="58" x2="690" y2="242" stroke="url(#divider)" stroke-width="1"/>
+
+  <!-- fee card -->
+  <rect x="716" y="48" width="444" height="204" rx="20" fill="#F4F8F7" stroke="#D9E5E2"/>
+  <text x="748" y="90" font-family="'JetBrains Mono', Consolas, 'Segoe UI', monospace" font-size="11.5" letter-spacing="3" fill="#4B6461">ORGANIZATIONAL FEE</text>
+  <rect x="1018" y="66" width="114" height="32" rx="16" fill="#D9FBF6"/>
+  <text x="1075" y="87" text-anchor="middle" font-family="'JetBrains Mono', Consolas, 'Segoe UI', monospace" font-size="11" font-weight="600" letter-spacing="2" fill="#0A6B62">PAID</text>
+  <text x="742" y="180" font-family="'JetBrains Mono', Consolas, 'Segoe UI', monospace" font-size="84" font-weight="600" letter-spacing="-4" fill="#001514">₱50</text>
+  <text x="750" y="224" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="15" fill="#4B6461">One-time contribution · ISCS Days</text>
+  <rect x="750" y="236" width="92" height="3" rx="1.5" fill="url(#rule)"/>
+</svg>

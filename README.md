@@ -1,14 +1,39 @@
-# IT3A - TRACK
+<div align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/readme-banner-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="docs/readme-banner-light.svg">
+    <img src="docs/readme-banner-light.svg" alt="IT3A - TRACK, IT3A ISCS Funds Payment Tracker" width="100%">
+  </picture>
 
-**IT3A Organizational Fee Tracker.**
+  <p>
+    <a href="https://it3a-track.vercel.app"><img src="https://img.shields.io/badge/LIVE-it3a--track.vercel.app-001514?style=for-the-badge&amp;labelColor=0A6B62&amp;logo=vercel&amp;logoColor=41EAD4" alt="Live app: it3a-track.vercel.app"></a>
+    <img src="https://img.shields.io/badge/FEE-%E2%82%B150-001514?style=for-the-badge&amp;labelColor=0A6B62" alt="Fee: ₱50">
+    <img src="https://img.shields.io/badge/NEXT.js-15-001514?style=for-the-badge&amp;labelColor=0A6B62&amp;logo=nextdotjs&amp;logoColor=41EAD4" alt="Next.js 15">
+    <img src="https://img.shields.io/badge/SUPABASE-POSTGRES-001514?style=for-the-badge&amp;labelColor=0A6B62&amp;logo=supabase&amp;logoColor=41EAD4" alt="Supabase Postgres">
+  </p>
+</div>
+
+<p align="center">
+  <a href="https://it3a-track.vercel.app"><strong>it3a-track.vercel.app</strong></a><br>
+  <sub><strong>IT3A ISCS Funds Payment Tracker</strong> · Paid-only public ledger for the ₱50 organizational fund.</sub>
+</p>
 
 IT3A - TRACK is the payment tracker for the IT3A organizational fund for the upcoming
 ISCS Days. Every student in the section owes a one-time ₱50 contribution. One shared roster
 answers two different questions: the class can see who has already paid, and the two
 administrators can see who has not.
 
+<p align="center">
+  <a href="#what-it-does">What it does</a> ·
+  <a href="#design">Design</a> ·
+  <a href="#security-model">Security</a> ·
+  <a href="#deploying-to-vercel">Deploy</a> ·
+  <a href="#troubleshooting">Troubleshooting</a>
+</p>
+
 **At a glance**
 
+- **Live app:** [it3a-track.vercel.app](https://it3a-track.vercel.app).
 - **Who pays:** every student in IT3A.
 - **Fee:** ₱50, one-time, for the ISCS Days organizational fund.
 - **Public page:** paid students only, their merit numbers, plus the running total collected.
@@ -95,8 +120,26 @@ ever exposed publicly, so the page cannot be used to rank or shame anyone by abs
 | Data     | Supabase Postgres, Row Level Security, Supabase Auth         |
 | Hosting  | Vercel (or any Node host that runs Next.js)                  |
 
-Palette: `#FFFFFF` canvas, `#001514` ink, `#41EAD4` accent.
+Palette: `#FFFFFF` canvas, `#41EAD4` accent, `#001514` ink.
 Type: Outfit for text, JetBrains Mono for figures.
+
+---
+
+## Design
+
+<div align="center">
+  <img src="docs/palette.svg" alt="Palette: #FFFFFF canvas, #41EAD4 accent, #001514 ink" width="100%">
+</div>
+
+| Token | Value | Role |
+| --- | --- | --- |
+| Canvas | `#FFFFFF` | Page surfaces, with cool neutral steps for layering |
+| Accent | `#41EAD4` | PAID state, focus rings, the hero sheen, and primary actions |
+| Ink | `#001514` | Type, inverse cards, and the dark canvas |
+
+Dark mode derives its neutrals from the same three colours; the accent never changes. Motion is
+limited to entry reveals and collapses under `prefers-reduced-motion`. Cards use 16px radii,
+controls use 10px, and figures are set in JetBrains Mono.
 
 ---
 
@@ -169,6 +212,7 @@ npm run dev
 
 - Public page: <http://localhost:3000>
 - Login: <http://localhost:3000/login>
+- Production: <https://it3a-track.vercel.app>
 
 ---
 
@@ -226,11 +270,12 @@ distributed attack.
    npm run setup:admins
    ```
 
-5. Deploy. Then confirm:
+5. Deploy to <https://it3a-track.vercel.app>. Then confirm:
    - `/` shows the paid leaderboard.
    - `/admin` redirects to `/login` when signed out.
    - Both administrators can sign in and one can mark a student paid.
-6. Share the public URL with IT3A and give the two administrator logins to Dexter and Troy only.
+6. Share <https://it3a-track.vercel.app> with IT3A and give the two administrator logins to
+   Dexter and Troy only.
 
 Any Node host that supports Next.js 15 works the same way; the server actions need a Node
 runtime, which is the default.
@@ -327,6 +372,7 @@ lib/
 supabase/migrations/       0001 schema, 0002 RLS, 0003 signup lockdown, 0004 merit number,
                            0005 public merit column
 scripts/                   migrate, setup-admins, import-students
+docs/                      README banner and palette artwork
 ```
 
 ## Resetting an administrator password
@@ -335,3 +381,10 @@ scripts/                   migrate, setup-admins, import-students
 2. Run `npm run setup:admins`.
 
 Nothing else changes; the dashboard data is untouched.
+
+---
+
+<div align="center">
+  <sub><strong>IT3A - TRACK</strong> · IT3A ISCS Funds Payment Tracker · ₱50 organizational fund for ISCS Days</sub><br>
+  <sub><a href="https://it3a-track.vercel.app">it3a-track.vercel.app</a></sub>
+</div>
