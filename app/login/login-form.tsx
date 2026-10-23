@@ -38,7 +38,7 @@ export function LoginForm({ next, denied }: { next?: string; denied?: boolean })
           autoCapitalize="none"
           autoCorrect="off"
           spellCheck={false}
-          placeholder="dexter.gravoso"
+          placeholder="example@email.com"
           required
           disabled={pending}
           aria-invalid={state.error ? true : undefined}
