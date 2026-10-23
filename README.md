@@ -27,7 +27,7 @@ administrators can see who has not.
   <a href="#what-it-does">What it does</a> ·
   <a href="#design">Design</a> ·
   <a href="#security-model">Security</a> ·
-  <a href="#deploying-to-vercel">Deploy</a> ·
+  <a href="#deploying">Deploy</a> ·
   <a href="#troubleshooting">Troubleshooting</a>
 </p>
 
@@ -117,7 +117,7 @@ ever exposed publicly, so the page cannot be used to rank or shame anyone by abs
 | -------- | ------------------------------------------------------------ |
 | UI       | Next.js 15.5 (App Router), React 19, TypeScript              |
 | Styling  | Tailwind CSS 4 with custom design tokens                     |
-| Data     | Supabase Postgres, Row Level Security, Supabase Auth         |
+| Data     | Postgres, Row Level Security, Auth                           |
 | Hosting  | Vercel (or any Node host that runs Next.js)                  |
 
 Palette: `#FFFFFF` canvas, `#41EAD4` accent, `#001514` ink.
@@ -144,15 +144,11 @@ radii, controls use 10px, and figures are set in JetBrains Mono.
 
 ---
 
-## 1. Create the Supabase project
+## 1. Create the project database
 
-1. Go to <https://supabase.com/dashboard> and create a new project.
-2. Open **Project Settings -> API** and copy:
-   - Project URL
-   - `anon` public key
-   - `service_role` secret key
-3. Open **Project Settings -> Database -> Connection string -> URI** and copy the connection
-   string. If the password contains `@`, `:`, `/` or `#`, percent-encode it (`@` becomes `%40`).
+1. Create a Postgres project.
+2. Copy the project URL, `anon` public key, `service_role` secret key, and a Postgres connection string.
+3. If the direct connection hostname is IPv6-only, use the session pooler URI instead. If the password contains `@`, `:`, `/` or `#`, percent-encode it.
 
 ## 2. Configure the environment
 
@@ -164,15 +160,15 @@ Fill in `.env.local`:
 
 | Variable                        | Used by                          | Notes                                     |
 | ------------------------------- | -------------------------------- | ----------------------------------------- |
-| `NEXT_PUBLIC_SUPABASE_URL`      | app and scripts                  | Safe to expose                            |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | app, RLS enforced                | Safe to expose                            |
-| `SUPABASE_SERVICE_ROLE_KEY`     | server actions and scripts only  | **Never** expose; bypasses RLS            |
+| `NEXT_PUBLIC_SUPABASE_URL`      | app and scripts                  | Project URL                               |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | app, RLS enforced                | `anon` public key                         |
+| `SUPABASE_SERVICE_ROLE_KEY`     | server actions and scripts only  | `service_role` secret key; **Never** expose; bypasses RLS |
 | `DATABASE_URL`                  | `npm run migrate`                | Direct or pooler Postgres URI             |
 | `IT3A_ADMIN_1_*`                | `npm run setup:admins`           | Dexter Gravoso                            |
 | `IT3A_ADMIN_2_*`                | `npm run setup:admins`           | Troy Lagahit                              |
 
-`.env.local` is gitignored. Passwords live only there and are hashed by Supabase Auth; they are
-never written to the database, the client bundle, or the console.
+Passwords live only there and are hashed by the auth provider; they are never written to the
+database, the client bundle, or the console.
 
 ## 3. Install, migrate, provision
 
@@ -213,7 +209,6 @@ npm run dev
 
 - Public page: <http://localhost:3000>
 - Login: <http://localhost:3000/login>
-- Production: <https://it3a-track.vercel.app>
 
 ---
 
@@ -238,7 +233,7 @@ All access control lives in Postgres. The UI is a convenience layer.
 
 ### Disable public registration at the provider level
 
-In the Supabase dashboard go to **Authentication -> Sign In / Providers -> Email** and turn off
+In the auth dashboard go to **Authentication -> Sign In / Providers -> Email** and turn off
 **Allow new users to sign up**. Also check **Authentication -> Settings** for any signup-related
 toggles.
 
@@ -251,16 +246,16 @@ app, because the trigger applies to the whole `auth.users` table.
 ### Rate limiting
 
 The login action allows 8 attempts per IP per minute. This is a per-instance in-memory window on
-top of Supabase Auth's own throttling; it blunts casual brute force rather than stopping a
+top of the auth provider's throttling; it blunts casual brute force rather than stopping a
 distributed attack.
 
 ---
 
-## Deploying to Vercel
+## Deploying
 
 1. Push the project to a Git repository.
-2. In Vercel, **Add New -> Project** and import the repository. The Next.js preset is correct.
-3. Add these environment variables for Production, Preview, and Development:
+2. Deploy to a Node host that runs Next.js 15.
+3. Add these environment variables in the host:
    `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`.
    Do not add `DATABASE_URL` or the `IT3A_ADMIN_*` variables; those are local-only.
 4. Run the migrations and provisioning against the production database from your machine, using
@@ -271,15 +266,13 @@ distributed attack.
    npm run setup:admins
    ```
 
-5. Deploy to <https://it3a-track.vercel.app>. Then confirm:
+5. Deploy. Then confirm:
    - `/` shows the paid leaderboard.
    - `/admin` redirects to `/login` when signed out.
    - Both administrators can sign in and one can mark a student paid.
-6. Share <https://it3a-track.vercel.app> with IT3A and give the two administrator logins to
-   Dexter and Troy only.
+6. Share the public URL with IT3A and give the two administrator logins to Dexter and Troy only.
 
-Any Node host that supports Next.js 15 works the same way; the server actions need a Node
-runtime, which is the default.
+The server actions need a Node runtime, which is the default.
 
 ---
 
@@ -287,8 +280,8 @@ runtime, which is the default.
 
 ### `getaddrinfo ENOTFOUND db.<ref>.supabase.co`
 
-Newer Supabase projects publish an **IPv6-only** direct connection host. On a network without
-IPv6 (most home and office networks), that hostname cannot resolve. Use the pooler instead:
+Newer projects publish an **IPv6-only** direct connection host. On a network without
+IPv6, that hostname cannot resolve. Use the pooler instead:
 
 **Dashboard -> Connect -> Connection string -> Session pooler**, then copy the URI. It looks like:
 
@@ -306,7 +299,7 @@ Two differences from the direct string:
 ### `password authentication failed`
 
 The pooler and the direct connection use different usernames (see above). If the username is
-right, reset the database password in **Project Settings -> Database** and re-copy the URI.
+right, reset the database password and re-copy the URI.
 
 ### `Tenant or user not found`
 
