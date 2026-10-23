@@ -1,28 +1,22 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { MagnifyingGlass, Receipt, X } from "@phosphor-icons/react";
+import { useEffect, useMemo, useState } from "react";
+import { CaretLeft, CaretRight, MagnifyingGlass, Receipt, X } from "@phosphor-icons/react";
 import { StatusBadge } from "@/components/ui/field";
-import { SORT_OPTIONS, type SortOption } from "@/lib/constants";
 import { formatDate, formatRank, normalizeName } from "@/lib/format";
 import { cn } from "@/lib/cn";
 import type { PublicStudent } from "@/lib/types";
 
-const shortLabels: Record<SortOption, string> = {
-  payment: "Payment",
-  az: "A-Z",
-  za: "Z-A",
-};
+const PAGE_SIZE = 10;
 
 /**
- * Public leaderboard. Receives paid rows only; ranks are assigned server-side
- * by payment date and stay attached to a student while searching or sorting.
+ * Public leaderboard. Sorted A-Z, paginated in groups of 10 with next/previous arrows.
  */
 export function Leaderboard({ students }: { students: PublicStudent[] }) {
   const [query, setQuery] = useState("");
-  const [sort, setSort] = useState<SortOption>("payment");
+  const [page, setPage] = useState(0);
 
-  const visible = useMemo(() => {
+  const sorted = useMemo(() => {
     const needle = normalizeName(query);
     const filtered = needle
       ? students.filter(
@@ -30,16 +24,21 @@ export function Leaderboard({ students }: { students: PublicStudent[] }) {
             normalizeName(student.full_name).includes(needle) ||
             normalizeName(student.merit_number ?? "").includes(needle),
         )
-      : students;
+      : [...students];
 
-    if (sort === "payment") return filtered;
-
-    const direction = sort === "az" ? 1 : -1;
-    return [...filtered].sort(
-      (a, b) =>
-        direction * a.full_name.localeCompare(b.full_name, "en", { sensitivity: "base" }),
+    return filtered.sort((a, b) =>
+      a.full_name.localeCompare(b.full_name, "en", { sensitivity: "base" }),
     );
-  }, [students, query, sort]);
+  }, [students, query]);
+
+  useEffect(() => {
+    setPage(0);
+  }, [query, sorted.length]);
+
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages - 1);
+  const startIndex = safePage * PAGE_SIZE;
+  const visible = sorted.slice(startIndex, startIndex + PAGE_SIZE);
 
   return (
     <section aria-labelledby="leaderboard-heading">
@@ -51,7 +50,6 @@ export function Leaderboard({ students }: { students: PublicStudent[] }) {
           >
             Paid Students
           </h2>
-          <p className="mt-1.5 text-sm text-muted">Ranked by payment date, earliest first.</p>
         </div>
 
         <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
@@ -85,73 +83,79 @@ export function Leaderboard({ students }: { students: PublicStudent[] }) {
               </button>
             ) : null}
           </div>
-
-          <div
-            role="group"
-            aria-label="Sort by"
-            className="inline-flex h-10 items-center gap-0.5 self-start rounded-control border border-line bg-surface p-1"
-          >
-            {SORT_OPTIONS.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => setSort(option.value)}
-                aria-pressed={sort === option.value}
-                aria-label={option.label}
-                className={cn(
-                  "h-8 rounded-[7px] px-2.5 text-xs font-medium transition-colors",
-                  sort === option.value
-                    ? "bg-canvas text-ink shadow-[0_1px_2px_rgba(0,21,20,0.08)]"
-                    : "text-muted hover:text-ink",
-                )}
-              >
-                {shortLabels[option.value]}
-              </button>
-            ))}
-          </div>
         </div>
       </div>
 
       <div className="mt-6 rounded-card border border-line bg-canvas p-2">
         {students.length === 0 ? (
           <EmptyLedger />
-        ) : visible.length === 0 ? (
+        ) : sorted.length === 0 ? (
           <NoMatches query={query} onClear={() => setQuery("")} />
         ) : (
-          <ul className="grid lg:grid-cols-2 lg:gap-x-4">
-            {visible.map((student) => (
-              <li key={student.id}>
-                <div className="flex items-center gap-3 rounded-[12px] px-3 py-2.5 transition-colors hover:bg-surface">
-                  <span
-                    className={cn(
-                      "tnum grid h-8 w-8 shrink-0 place-items-center rounded-[8px] font-mono text-[11px] font-semibold",
-                      rankTone(student.rank),
-                    )}
-                    aria-hidden="true"
-                  >
-                    {formatRank(student.rank)}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-medium text-ink">
-                      {student.full_name}
+          <>
+            <ul className="grid lg:grid-cols-2 lg:gap-x-4">
+              {visible.map((student) => (
+                <li key={student.id}>
+                  <div className="flex items-center gap-3 rounded-[12px] px-3 py-2.5 transition-colors hover:bg-surface">
+                    <span
+                      className={cn(
+                        "tnum grid h-8 w-8 shrink-0 place-items-center rounded-[8px] font-mono text-[11px] font-semibold",
+                        rankTone(student.rank),
+                      )}
+                      aria-hidden="true"
+                    >
+                      {formatRank(student.rank)}
                     </span>
-                    {student.merit_number ? (
-                      <span className="mt-0.5 block truncate font-mono text-[10px] text-muted">
-                        Merit no. {student.merit_number}
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-medium text-ink">
+                        {student.full_name}
                       </span>
-                    ) : null}
-                  </span>
-                  <StatusBadge status="paid" />
-                  <time
-                    dateTime={student.payment_date ?? undefined}
-                    className="hidden w-[86px] shrink-0 text-right font-mono text-[11px] text-muted sm:block"
+                      {student.merit_number ? (
+                        <span className="mt-0.5 block truncate font-mono text-[10px] text-muted">
+                          Merit no. {student.merit_number}
+                        </span>
+                      ) : null}
+                    </span>
+                    <StatusBadge status="paid" />
+                    <time
+                      dateTime={student.payment_date ?? undefined}
+                      className="hidden w-[86px] shrink-0 text-right font-mono text-[11px] text-muted sm:block"
+                    >
+                      {formatDate(student.payment_date)}
+                    </time>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            {sorted.length > PAGE_SIZE ? (
+              <div className="mt-2 flex items-center justify-between border-t border-line px-3 py-2">
+                <p className="text-xs text-muted">
+                  {startIndex + 1}-{Math.min(startIndex + PAGE_SIZE, sorted.length)} of{" "}
+                  {sorted.length}
+                </p>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setPage((p) => Math.max(0, p - 1))}
+                    disabled={safePage === 0}
+                    aria-label="Previous page"
+                    className="grid h-8 w-8 place-items-center rounded-[8px] text-muted transition-colors hover:bg-surface hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
                   >
-                    {formatDate(student.payment_date)}
-                  </time>
+                    <CaretLeft size={14} weight="bold" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                    disabled={safePage === totalPages - 1}
+                    aria-label="Next page"
+                    className="grid h-8 w-8 place-items-center rounded-[8px] text-muted transition-colors hover:bg-surface hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    <CaretRight size={14} weight="bold" />
+                  </button>
                 </div>
-              </li>
-            ))}
-          </ul>
+              </div>
+            ) : null}
+          </>
         )}
       </div>
     </section>
